@@ -1,0 +1,181 @@
+!DOCTYPE html>
+<html>
+<head>
+  <title>FireRoom - Game Modes</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#000000" />
+  <link rel="icon" href="https://i.ibb.co/TKQkM9C/fire-icon.png" />
+
+  <!-- Firebase SDKs (Future Login ke liye ready) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBNcF32rf98MxmcuJH84vMt4L1Wi0RCzNw",
+      authDomain: "fire-room-e6a8b.firebaseapp.com",
+      projectId: "fire-room-e6a8b",
+      storageBucket: "fire-room-e6a8b.firebasestorage.app",
+      messagingSenderId: "768434814658",
+      appId: "1:768434814658:web:a3b6d757270858c478055b"
+    };
+    firebase.initializeApp(firebaseConfig);
+  </script>
+
+  <style>
+    body { background: black; color: white; font-family: sans-serif; padding: 20px; }
+    h1 { color: red; text-align: center; }
+    select, input, button {
+      width: 100%; padding: 12px; margin: 10px 0; border-radius: 6px; border: none;
+    }
+    button {
+      background: red; color: white; font-size: 16px; font-weight: bold;
+    }
+    .info-box {
+      background: #111; padding: 10px; border-radius: 6px; margin-bottom: 10px;
+    }
+    label { margin-top: 10px; display: block; }
+  </style>
+</head>
+
+<body>
+  <h1>🔥 FireRoom Tournament Entry 🔥</h1>
+
+  <label for="mainMode">Choose Main Mode:</label>
+  <select id="mainMode" onchange="renderSubModes()">
+    <option value="">-- Select --</option>
+    <option value="Survival">🟢 Survival</option>
+    <option value="Lone Wolf">🐺 Lone Wolf</option>
+    <option value="1v1 Only">🔴 1v1 Only Headshots</option>
+  </select>
+
+  <div id="subModeSection" style="display:none;">
+    <label for="subMode">Select Submode:</label>
+    <select id="subMode" onchange="updateDetails()"></select>
+  </div>
+
+  <div class="info-box" id="details" style="display:none;"></div>
+  <div class="info-box" id="live" style="display:none;">Loading...</div>
+  <div class="info-box" id="fullNotice" style="display:none; color: red;">🚫 All spots are full for this mode.</div>
+
+  <div id="formSection" style="display:none;">
+    <label>Player Name:</label>
+    <input type="text" id="name" placeholder="Enter name" />
+
+    <label>Free Fire UID:</label>
+    <input type="text" id="uid" placeholder="Enter UID" />
+
+    <label>WhatsApp Number:</label>
+    <input type="text" id="wa" placeholder="Enter WhatsApp number" />
+
+    <label><input type="checkbox" id="ageCheck" /> I am 18+ and agree to terms</label>
+
+    <p style="font-size: 12px; color: grey;">
+      🔐 This is a skill-based platform. No gambling involved. Your data is only used for tournament participation.
+    </p>
+
+    <button onclick="submitForm()">Submit via WhatsApp</button>
+  </div>
+
+  <p style="text-align:center; margin-top:20px;">Powered by FF UTILITY HUB</p>
+
+  <script>
+    const playerLimits = {
+      "Survival": 48,
+      "Lone Wolf": { "Solo": 2, "Duo": 4 },
+      "1v1 Only": { "Solo": 2 }
+    };
+
+    const modeData = {
+      "Survival": {
+        "Solo":  { fee: 15, win: 100, kill: 5 },
+        "Duo":   { fee: 30, win: 200, kill: 10 },
+        "Squad": { fee: 50, win: 300, kill: 15 }
+      },
+      "Lone Wolf": {
+        "Solo": { fee: 30, win: 50, kill: 0 },
+        "Duo":  { fee: 50, win: 90, kill: 0 }
+      },
+      "1v1 Only": {
+        "Solo": { fee: 10, win: 15, kill: 0 }
+      }
+    };
+
+    function renderSubModes() {
+      const mainMode = document.getElementById("mainMode").value;
+      const subSelect = document.getElementById("subMode");
+      const subSection = document.getElementById("subModeSection");
+      subSelect.innerHTML = "";
+      document.getElementById("details").style.display = "none";
+      document.getElementById("formSection").style.display = "none";
+      document.getElementById("live").style.display = "none";
+      document.getElementById("fullNotice").style.display = "none";
+
+      if (!mainMode) return subSection.style.display = "none";
+
+      const subModes = Object.keys(modeData[mainMode]);
+      subModes.forEach(sm => {
+        const opt = document.createElement("option");
+        opt.value = sm;
+        opt.text = sm;
+        subSelect.appendChild(opt);
+      });
+
+      subSection.style.display = "block";
+      updateDetails();
+    }
+
+    function updateDetails() {
+      const main = document.getElementById("mainMode").value;
+      const sub = document.getElementById("subMode").value;
+
+      if (!main || !sub) return;
+
+      const data = modeData[main][sub];
+      const limit = main === "Survival" ? 48 : playerLimits[main][sub];
+      const details = `🎮 Mode: ${main} - ${sub}<br>
+                       💰 Entry Fee: ₹${data.fee}<br>
+                       🏆 Win Prize: ₹${data.win}<br>
+                       🔫 Per Kill: ₹${data.kill}`;
+      document.getElementById("details").innerHTML = details;
+      document.getElementById("details").style.display = "block";
+
+      fetch("https://script.google.com/macros/s/AKfycbyZ293oJDM4RIo83bo7svQSsr-qhOdV7zALXTjaQMlL7iP68gc7vexkjcMQ_Bhaxjgu1Q/exec")
+        .then(res => res.json())
+        .then(data => {
+          const joined = data.length - 1;
+          const left = limit - joined;
+          document.getElementById("live").innerText = `✅ ${joined}/${limit} Joined | 🟡 ${left} Spots Left`;
+          document.getElementById("live").style.display = "block";
+
+          if (joined >= limit) {
+            document.getElementById("formSection").style.display = "none";
+            document.getElementById("fullNotice").style.display = "block";
+          } else {
+            document.getElementById("formSection").style.display = "block";
+            document.getElementById("fullNotice").style.display = "none";
+          }
+        });
+    }
+
+    function submitForm() {
+      const name = document.getElementById("name").value;
+      const uid = document.getElementById("uid").value;
+      const wa = document.getElementById("wa").value;
+      const main = document.getElementById("mainMode").value;
+      const sub = document.getElementById("subMode").value;
+      const d = modeData[main][sub];
+
+      if (!document.getElementById("ageCheck").checked) {
+        alert("Please confirm you're 18+"); return;
+      }
+      if (!name || !uid || !wa) {
+        alert("Fill all fields"); return;
+      }
+
+      const msg = `🔥 FireRoom Entry 🔥\n\nName: ${name}\nUID: ${uid}\nMode: ${main} - ${sub}\nEntry Fee: ₹${d.fee}\nWin Prize: ₹${d.win}\nPer Kill: ₹${d.kill}\nWhatsApp: ${wa}`;
+      window.open(`https://wa.me/9198232059?text=${encodeURIComponent(msg)}`, "_blank");
+    }
+  </script>
+</body>
+</html>
